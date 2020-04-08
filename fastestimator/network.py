@@ -17,6 +17,7 @@ from typing import Any, Callable, Dict, Iterable, List, MutableMapping, Optional
 
 import tensorflow as tf
 import torch
+
 from fastestimator.backend.load_model import load_model
 from fastestimator.backend.to_tensor import to_tensor
 from fastestimator.op.op import get_current_ops, get_inputs_by_op, write_outputs_by_op
@@ -521,7 +522,8 @@ class TFNetwork(BaseNetwork):
         self.unload_epoch()
         data.update(prediction)
         # handle multi-gpu
-        batch_sizes = set(data[key].shape[0] for key in data if len(data[key].shape) > 0)
+        batch_sizes = set(data[key].shape[0] for key in data
+                          if hasattr(data[key], 'shape') and len(data[key].shape) > 0)
         if len(batch_sizes) > 1:
             min_batch = min(batch_sizes)
             for key, val in data.items():
@@ -530,12 +532,11 @@ class TFNetwork(BaseNetwork):
         return data
 
 
-def build(
-    model_fn: Callable[[], Union[tf.keras.Model, torch.nn.Module]],
-    optimizer_fn: Union[str, Scheduler, Callable, List[str], List[Callable], List[Scheduler], None],
-    weights_path: Union[str, None, List[Union[str, None]]] = None,
-    model_names: Union[str, List[str], None] = None
-) -> Union[tf.keras.Model, torch.nn.Module, List[tf.keras.Model], List[torch.nn.Module]]:
+def build(model_fn: Callable[[], Union[tf.keras.Model, torch.nn.Module]],
+          optimizer_fn: Union[str, Scheduler, Callable, List[str], List[Callable], List[Scheduler], None],
+          weights_path: Union[str, None, List[Union[str, None]]] = None,
+          model_names: Union[str, List[str], None] = None
+          ) -> Union[tf.keras.Model, torch.nn.Module, List[tf.keras.Model], List[torch.nn.Module]]:
     """Build model instances and associate them with optimizers.
 
     This method can be used with TensorFlow models / optimizers:
